@@ -358,7 +358,7 @@ class Tapper:
 
             tasks = response_json['data']
             for task in tasks:
-                if not task['done']:
+                if not task['done'] and task['assignmentId'] != 48:
                     await asyncio.sleep(delay=randint(5, 15))
                     status = await self.do_task(http_client, task['title'], int(task['assignmentId']))
 
