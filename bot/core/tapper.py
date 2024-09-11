@@ -385,7 +385,7 @@ class Tapper:
                 if error.ID == 'USER_NOT_PARTICIPANT':
                     logger.info(f"{self.session_name} | User not participant of the TG group: <y>{chat.username}</y>")
                     await asyncio.sleep(delay=3)
-                    response = await self.tg_client.join_chat(parsed_link)
+                    response = await self.tg_client.join_chat(channel)
                     logger.info(f"{self.session_name} | Joined to channel: <y>{response.username}</y>")
 
                     try:
