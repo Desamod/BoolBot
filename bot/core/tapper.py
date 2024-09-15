@@ -32,6 +32,7 @@ class Tapper:
         self.session_name = tg_client.name
         self.auth_data = ''
         self.hash = ''
+        self.tg_id = ''
 
     async def get_tg_web_data(self, proxy: str | None) -> str:
         if proxy:
@@ -84,6 +85,7 @@ class Tapper:
             user = user_data.replace('"', '\"')
             self.auth_data = f"auth_date={auth_date}\nchat_instance={chat_instance}\nchat_type={chat_type}{start_param}\nuser={user}"
             self.hash = hash_value
+            self.tg_id = user.split('"id":')[1].split(',')[0]
 
             if self.tg_client.is_connected:
                 await self.tg_client.disconnect()
@@ -106,6 +108,7 @@ class Tapper:
             response.raise_for_status()
 
             response_json = await response.json()
+            await http_client.get(f'https://miniapp.bool.network/backend/bool-tg-interface/user/check?tgId={self.tg_id}')
             return response_json['data']
 
         except Exception as error:
@@ -150,25 +153,7 @@ class Tapper:
                 "data": self.auth_data,
                 "hash": self.hash
             }
-            response = await http_client.post(f'https://miniapp.bool.network/backend/bool-tg-interface/assignment/do',
-                                              json=json_data)
-            response.raise_for_status()
-            response_json = await response.json()
-
-            return response_json['data']
-
-        except Exception as error:
-            logger.error(f"{self.session_name} | Unknown error when processing task: {error}")
-            await asyncio.sleep(delay=3)
-
-    async def claim_daily(self, http_client: aiohttp.ClientSession, task_id: int):
-        try:
-            json_data = {
-                "assignmentId": task_id,
-                "data": self.auth_data,
-                "hash": self.hash
-            }
-            response = await http_client.post(f'https://miniapp.bool.network/backend/bool-tg-interface/assignment/daily/do',
+            response = await http_client.post(f'https://bot-api.bool.network/bool-tg-interface/assignment/do',
                                               json=json_data)
             response.raise_for_status()
             response_json = await response.json()
@@ -227,7 +212,7 @@ class Tapper:
                 "hash": self.hash
             }
 
-            response = await http_client.post('https://bot-api.bool.network/bool-tg-interface/user/verify',
+            response = await http_client.post('https://miniapp.bool.network/backend/bool-tg-interface/user/verify',
                                               json=json_data)
             response.raise_for_status()
             response_json = await response.json()
@@ -280,7 +265,7 @@ class Tapper:
             return int(dec_balance / 1e18)
 
         except Exception as error:
-            logger.error(f"{self.session_name} | Unknown error when staking: {error}")
+            logger.error(f"{self.session_name} | Unknown error when getting staking balance: {error}")
             await asyncio.sleep(delay=3)
 
     async def send_transaction_data(self, http_client: aiohttp.ClientSession, json_data: Any):
@@ -376,11 +361,10 @@ class Tapper:
         try:
             parsed_link = link if 'https://t.me/+' in link else link[13:]
             channel = parsed_link.split('/')[0]
-            linked_chat = parsed_link.split('/')[1]
             chat = await self.tg_client.get_chat(channel)
             logger.info(f"{self.session_name} | Get channel: <y>{chat.username}</y>")
             try:
-                await self.tg_client.get_chat_member(chat.username, "me")
+                await self.tg_client.get_chat_member(chat.id, "me")
             except Exception as error:
                 if error.ID == 'USER_NOT_PARTICIPANT':
                     logger.info(f"{self.session_name} | User not participant of the TG group: <y>{chat.username}</y>")
@@ -392,7 +376,7 @@ class Tapper:
                         peer = await self.tg_client.resolve_peer(chat.id)
                         await self.tg_client.invoke(
                             account.UpdateNotifySettings(peer=InputNotifyPeer(peer=peer),
-                                                         settings=InputPeerNotifySettings(mute_until=2 ** 31 - 1)))
+                                                         settings=InputPeerNotifySettings(mute_until=2**31 - 1)))
                         logger.info(f"{self.session_name} | Chat <lc>{chat.username} was muted</lc>")
                     except Exception as e:
                         logger.info(
@@ -404,6 +388,32 @@ class Tapper:
                 await self.tg_client.disconnect()
         except Exception as error:
             logger.error(f"{self.session_name} | Error while join tg channel: {error}")
+            await asyncio.sleep(delay=3)
+
+    async def check_daily_reward(self, http_client: aiohttp.ClientSession):
+        try:
+            json_data = {
+                "data": self.auth_data,
+                "hash": self.hash
+            }
+            response = await http_client.post(f'https://miniapp.bool.network/backend/bool-tg-interface/assignment/daily/list',
+                                              json=json_data)
+            response.raise_for_status()
+            response_json = await response.json()
+
+            if len(response_json['data']) > 0:
+                daily_task = response_json['data'][0]
+                if not daily_task.get('done'):
+                    await self.join_tg_channel(daily_task['url'])
+                    json_data['assignmentId'] = daily_task['assignmentId']
+                    response = await http_client.post(f'https://miniapp.bool.network/backend/bool-tg-interface/assignment/daily/do',
+                                                      json=json_data)
+                    response.raise_for_status()
+                    logger.success(f"{self.session_name} | Daily claimed | Reward: <e>{daily_task['reward']}</e> tBOL | "
+                                   f"Day count: <e>{daily_task['signDay'] + 1}</e>")
+
+        except Exception as error:
+            logger.error(f"{self.session_name} | Unknown error when processing daily reward: {error}")
             await asyncio.sleep(delay=3)
 
     async def processing_tasks(self, http_client: aiohttp.ClientSession):
@@ -419,14 +429,9 @@ class Tapper:
 
             tasks = response_json['data']
             for task in tasks:
-                if not task['done'] and task['assignmentId'] != 48:
+                if not task['done'] and task['assignmentId'] != 48 and task['project'] != 'daily':
                     await asyncio.sleep(delay=randint(5, 15))
-                    if task['project'] == 'daily':
-                        await self.join_tg_channel(task['url'])
-                        status = await self.claim_daily(http_client, int(task['assignmentId']))
-                    else:
-                        status = await self.do_task(http_client, task['title'], int(task['assignmentId']))
-
+                    status = await self.do_task(http_client, task['title'], int(task['assignmentId']))
                     if status:
                         logger.success(f"{self.session_name} | Task <lc>{task['title']}</lc> - Completed | "
                                        f"Reward: <e>{task['reward']}</e> tBOL")
@@ -435,6 +440,23 @@ class Tapper:
 
         except Exception as error:
             logger.error(f"{self.session_name} | Unknown error when processing tasks: {error}")
+            await asyncio.sleep(delay=3)
+
+    async def check_user_subscription(self, http_client: aiohttp.ClientSession):
+        try:
+            json_data = {
+                "data": self.auth_data,
+                "hash": self.hash
+            }
+            response = await http_client.post('https://miniapp.bool.network/backend/bool-tg-interface/user/channel/joined',
+                                              json=json_data)
+            response.raise_for_status()
+            response_json = await response.json()
+
+            return response_json['data']
+
+        except Exception as error:
+            logger.error(f"{self.session_name} | Unknown error when checking tg subscription: {error}")
             await asyncio.sleep(delay=3)
 
     async def run(self, proxy: str | None) -> None:
@@ -468,6 +490,8 @@ class Tapper:
                     logger.info(f"{self.session_name} | Balance: <e>{balance}</e> tBOL | "
                                 f"Rank: <fg #ffbcd9>{rank}</fg #ffbcd9>")
 
+                    await self.check_daily_reward(http_client=http_client)
+
                     if settings.AUTO_TASK:
                         await asyncio.sleep(delay=randint(3, 5))
                         await self.processing_tasks(http_client=http_client)
@@ -490,20 +514,21 @@ class Tapper:
                                         f'Voters: <y>{voters}</y>')
                                     await asyncio.sleep(delay=randint(3, 5))
                                     data = await self.make_staking(http_client=http_client,
-                                                                   device_id=record['deviceID'], amount=balance)
+                                                                     device_id=record['deviceID'], amount=balance)
                                     if data is not None:
                                         await asyncio.sleep(delay=randint(3, 5))
                                         result = await self.performing_transaction(http_client=http_client,
-                                                                                   data=data,
-                                                                                   wallet_address=strict_data[
-                                                                                       'evmAddress'])
+                                                                          data=data, wallet_address=strict_data['evmAddress'])
                                         if result is not None:
-                                            logger.success(
-                                                f"{self.session_name} | Successfully staked <e>{balance}</e> tBOL")
+                                            logger.success(f"{self.session_name} | Successfully staked <e>{balance}</e> tBOL")
 
                         elif not strict_data['isVerify']:
                             await asyncio.sleep(delay=randint(3, 10))
-                            await self.verify_account(http_client=http_client)
+                            subscribed = await self.check_user_subscription(http_client=http_client)
+                            if not subscribed:
+                                await self.join_tg_channel('https://t.me/boolofficial')
+                            else:
+                                await self.verify_account(http_client=http_client)
 
             except InvalidSession as error:
                 raise error
