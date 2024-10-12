@@ -1,4 +1,4 @@
-[![Static Badge](https://img.shields.io/badge/Telegram-Bot%20Link-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/boolfamily_bot/join?startapp=Y5734)
+[![Static Badge](https://img.shields.io/badge/Telegram-Bot%20Link-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/boolfamily_bot/join?startapp=2MSH0)
 
 ## Recommendation before use
 
@@ -25,6 +25,7 @@
 | **API_ID / API_HASH**   | Platform data from which to run the Telegram session (by default - android) |
 | **SLEEP_TIME**          |           Sleep time between cycles (by default - [7200, 10800])            |
 | **AUTO_TASK**           |                         Auto tasks (default - True)                         |
+| **JOIN_CHANNELS**       |              Auto-join for tg channels tasks (default - False)              |
 | **STAKING**             |      Auto staking your tokens for user verifying flow (default - True)      |
 | **USE_REF**             |               Use ref link for registration (default - True)                |
 | **USE_PROXY_FROM_FILE** | Whether to use a proxy from the bot/config/proxies.txt file (True / False)  |
@@ -105,7 +106,7 @@ You can also use arguments for quick start, for example:
 
 For support or questions, you can contact me
 
-[![Static Badge](https://img.shields.io/badge/Telegram-Channel-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/desforge_crypto)
+[![Static Badge](https://img.shields.io/badge/Telegram-Channel-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/desforge_cryptwo)
 
 
 

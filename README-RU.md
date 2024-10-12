@@ -1,4 +1,4 @@
-[![Static Badge](https://img.shields.io/badge/Telegram-Bot%20Link-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/boolfamily_bot/join?startapp=Y5734)
+[![Static Badge](https://img.shields.io/badge/Telegram-Bot%20Link-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/boolfamily_bot/join?startapp=2MSH0)
 
 ## Рекомендация перед использованием
 
@@ -25,6 +25,7 @@
 | **API_ID / API_HASH**   |  Данные платформы, с которой запускать сессию Telegram (сток - Android)  | 
 | **SLEEP_TIME**          |          Время сна между циклами (по умолчанию - [7200, 10800])          |
 | **AUTO_TASK**           |                Автовыполнение тасок (по умолчанию - True)                |
+| **JOIN_CHANNELS**       |        Авто-подписка на ТГ каналы из тасок (по умолчанию - False)        |
 | **STAKING**             | Стейкинг токенов для прохождения верификации юзера (по умолчанию - True) |
 | **USE_REF**             |     Использование реф. ссылки для регистрации (по умолчанию - True)      |
 | **USE_PROXY_FROM_FILE** | Использовать-ли прокси из файла `bot/config/proxies.txt` (True / False)  |
@@ -107,5 +108,5 @@ python main.py
 
 Для поддержки или вопросов, вы можете связаться со мной
 
-[![Static Badge](https://img.shields.io/badge/Telegram-Channel-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/desforge_crypto)
+[![Static Badge](https://img.shields.io/badge/Telegram-Channel-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/desforge_cryptwo)
 
