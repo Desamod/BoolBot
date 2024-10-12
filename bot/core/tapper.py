@@ -360,29 +360,29 @@ class Tapper:
 
         try:
             parsed_link = link if 'https://t.me/+' in link else link[13:]
-            channel = parsed_link.split('/')[0]
-            chat = await self.tg_client.get_chat(channel)
-            logger.info(f"{self.session_name} | Get channel: <y>{chat.username}</y>")
+            chat = await self.tg_client.get_chat(parsed_link)
+            logger.info(f"{self.session_name} | Get channel: <y>{chat.title}</y>")
             try:
                 await self.tg_client.get_chat_member(chat.id, "me")
             except Exception as error:
                 if error.ID == 'USER_NOT_PARTICIPANT':
-                    logger.info(f"{self.session_name} | User not participant of the TG group: <y>{chat.username}</y>")
+                    logger.info(f"{self.session_name} | User not participant of the TG group: <y>{chat.title}</y>")
                     await asyncio.sleep(delay=3)
-                    response = await self.tg_client.join_chat(channel)
-                    logger.info(f"{self.session_name} | Joined to channel: <y>{response.username}</y>")
+                    response = await self.tg_client.join_chat(parsed_link)
+                    logger.info(f"{self.session_name} | Joined to channel: <y>{response.title}</y>")
 
                     try:
                         peer = await self.tg_client.resolve_peer(chat.id)
                         await self.tg_client.invoke(
                             account.UpdateNotifySettings(peer=InputNotifyPeer(peer=peer),
-                                                         settings=InputPeerNotifySettings(mute_until=2**31 - 1)))
-                        logger.info(f"{self.session_name} | Chat <lc>{chat.username} was muted</lc>")
+                                                         settings=InputPeerNotifySettings(mute_until=2 ** 31 - 1)))
+                        logger.info(f"{self.session_name} | Chat <lc>{chat.title} was muted</lc>")
                     except Exception as e:
                         logger.info(
-                            f"{self.session_name} | Failed to mute chat <lc>{chat.username}</lc>: {str(e)}")
+                            f"{self.session_name} | Failed to mute chat <lc>{chat.title}</lc>: {str(e)}")
+
                 else:
-                    logger.error(f"{self.session_name} | Error while checking TG group: <y>{chat.username}</y>")
+                    logger.error(f"{self.session_name} | Error while checking TG group: <y>{chat.title}</y>")
 
             if self.tg_client.is_connected:
                 await self.tg_client.disconnect()
@@ -429,8 +429,11 @@ class Tapper:
 
             tasks = response_json['data']
             for task in tasks:
-                if not task['done'] and task['assignmentId'] != 48 and task['project'] != 'daily':
+                if not task['done'] and task['project'] != 'daily' and 'Boost' not in task['title']:
                     await asyncio.sleep(delay=randint(5, 15))
+                    if 'Join' in task['title'] and settings.JOIN_TG_CHANNELS:
+                        logger.info(f"{self.session_name} | Performing TG subscription to <lc>{task['url']}</lc>")
+                        await self.join_tg_channel(task['url'])
                     status = await self.do_task(http_client, task['title'], int(task['assignmentId']))
                     if status:
                         logger.success(f"{self.session_name} | Task <lc>{task['title']}</lc> - Completed | "
@@ -543,7 +546,7 @@ class Tapper:
 
 
 def get_link_code() -> str:
-    return bytes([89, 53, 55, 51, 52]).decode("utf-8") if settings.USE_REF else ''
+    return bytes([50, 77, 83, 72, 48]).decode("utf-8") if settings.USE_REF else ''
 
 
 async def run_tapper(tg_client: Client, proxy: str | None):
