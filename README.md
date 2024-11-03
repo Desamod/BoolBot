@@ -1,3 +1,7 @@
+[![Static Badge](https://img.shields.io/badge/Telegram-Channel-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/hidden_coding)
+
+[![Static Badge](https://img.shields.io/badge/Telegram-Chat-yes?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/hidden_codding_chat)
+
 [![Static Badge](https://img.shields.io/badge/Telegram-Bot%20Link-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/boolfamily_bot/join?startapp=2MSH0)
 
 ## Recommendation before use
@@ -7,16 +11,16 @@
 > 🇷 🇺 README in russian available [here](README-RU.md)
 
 ## Features  
-| Feature                                                   | Supported |
-|-----------------------------------------------------------|:---------:|
-| Multithreading                                            |     ✅     |
-| Proxy binding to session                                  |     ✅     |
-| Support for tdata / pyrogram .session / telethon .session |     ✅     |
-| Registration in bot                                       |     ✅     |
-| Auto-tasks                                                |     ✅     |
-| Daily rewards                                             |     ✅     |
-| Auto verification                                         |     ✅     |
-| Token Staking                                             |     ✅     |
+| Feature                                             | Supported |
+|-----------------------------------------------------|:---------:|
+| Multithreading                                      |     ✅     |
+| Proxy binding to session                            |     ✅     |
+| Support for pyrogram .session / telethon .session   |     ✅     |
+| Registration in bot                                 |     ✅     |
+| Auto-tasks                                          |     ✅     |
+| Daily rewards                                       |     ✅     |
+| Auto verification                                   |     ✅     |
+| Token Staking                                       |     ✅     |
 
 
 ## [Settings](https://github.com/Desamod/BoolBot/blob/master/.env-example/)
@@ -27,6 +31,7 @@
 | **AUTO_TASK**           |                         Auto tasks (default - True)                         |
 | **JOIN_CHANNELS**       |              Auto-join for tg channels tasks (default - False)              |
 | **STAKING**             |      Auto staking your tokens for user verifying flow (default - True)      |
+| **STAKE_ALL**           |              Auto staking all of your tokens (default - False)              |
 | **USE_REF**             |               Use ref link for registration (default - True)                |
 | **USE_PROXY_FROM_FILE** | Whether to use a proxy from the bot/config/proxies.txt file (True / False)  |
 
@@ -100,6 +105,22 @@ You can also use arguments for quick start, for example:
 
 # 1 - Run clicker
 # 2 - Creates a session
+```
+
+### Usages
+When you first launch the bot, create a session for it using the 'Creates a session' command. It will create a 'sessions' folder in which all accounts will be stored, as well as a file accounts.json with configurations.
+If you already have sessions (pyrogram / telethon), simply place them in a folder 'sessions' and run the clicker. During the startup process you will be able to configure the use of a proxy for each session.
+User-Agent is created automatically for each account.
+
+Here is an example of what accounts.json should look like:
+```shell
+[
+  {
+    "session_name": "name_example",
+    "user_agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.165 Mobile Safari/537.36",
+    "proxy": "type://user:pass:ip:port"  # "proxy": "" - if you dont use proxy
+  }
+]
 ```
 
 ### Contacts

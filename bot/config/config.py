@@ -11,8 +11,9 @@ class Settings(BaseSettings):
     SLEEP_TIME: list[int] = [7200, 10800]
     AUTO_TASK: bool = True
     JOIN_TG_CHANNELS: bool = False
-    USE_REF: bool = True
+    REF_ID: str = '2MSH0'
     STAKING: bool = True
+    STAKE_ALL: bool = True
     MIN_STAKING_BALANCE: float = 200.0
 
     USE_PROXY_FROM_FILE: bool = False

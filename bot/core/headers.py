@@ -1,6 +1,6 @@
 headers = {
     'Accept': 'application/json',
-    'Accept-Language': 'en',
+    'Accept-Language': 'en-US',
     'Content-Type': 'application/json',
     'Connection': 'keep-alive',
     'Origin': 'https://miniapp.bool.network',
