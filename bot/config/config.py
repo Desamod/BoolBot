@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     JOIN_TG_CHANNELS: bool = False
     REF_ID: str = '2MSH0'
     STAKING: bool = True
-    STAKE_ALL: bool = True
+    STAKE_ALL: bool = False
     MIN_STAKING_BALANCE: float = 200.0
 
     USE_PROXY_FROM_FILE: bool = False
