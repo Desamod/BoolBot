@@ -383,7 +383,7 @@ class Tapper:
                             await asyncio.sleep(delay=randint(30, 60))
                             continue
                         access_token_created_time = time()
-                        token_live_time = randint(150, 200)
+                        token_live_time = randint(3500, 3600)
 
                         strict_data = await self.get_strict_data(http_client=http_client)
                         if strict_data is None:
