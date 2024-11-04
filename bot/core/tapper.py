@@ -193,7 +193,7 @@ class Tapper:
             return int(dec_balance / 1e18)
 
         except Exception as error:
-            logger.error(f"{self.session_name} | Unknown error when getting staking balance: {error}")
+            logger.error(f"{self.session_name} | Unknown error when getting unstaking balance: {error}")
             await asyncio.sleep(delay=3)
 
     async def send_transaction_data(self, http_client: aiohttp.ClientSession, json_data: Any):
