@@ -154,11 +154,11 @@ class Tapper:
             logger.error(f"{self.session_name} | Unknown error when verifying account: {error}")
             await asyncio.sleep(delay=3)
 
-    async def make_staking(self, http_client: aiohttp.ClientSession, device_id: str, amount: str):
+    async def make_staking(self, http_client: aiohttp.ClientSession, device_ids: list[str], amount: list[str]):
         try:
             json_data = {
-                "deviceId": [device_id],
-                "amount": [amount],
+                "deviceId": device_ids,
+                "amount": amount,
                 "data": self.auth_data,
                 "hash": self.tg_session.hash_value
             }
@@ -327,6 +327,8 @@ class Tapper:
             tasks = response_json['data'] + repeat_data_json['data']
             for task in tasks:
                 if not task['done'] and 'Boost' not in task['title'] and 'Daily Check-in' not in task['title']:
+                    if task['project'] == 'daily' and "signDay" not in task:
+                        continue
                     if ('Join' in task['title'] or 'Subscribe' in task['title']) and 'https://t.me/' in task['url']:
                         if settings.JOIN_TG_CHANNELS:
                             logger.info(f"{self.session_name} | Performing TG subscription to <lc>{task['url']}</lc>")
@@ -338,7 +340,7 @@ class Tapper:
                     status = await self.do_task(http_client, task['title'], int(task['assignmentId']), endpoint)
                     if status:
                         logger.success(f"{self.session_name} | Task <lc>{task['title']}</lc> - Completed | "
-                                       f"Reward: <e>{task['reward']}</e> tBOL")
+                                       f"Reward: <e>{int(float(task['reward']))}</e> tBOL")
                     else:
                         logger.warning(f"{self.session_name} | Failed processing task <lc>{task['title']}</lc>")
 
@@ -362,6 +364,33 @@ class Tapper:
 
         except Exception as error:
             logger.error(f"{self.session_name} | Unknown error when checking tg subscription: {error}")
+            await asyncio.sleep(delay=3)
+
+    async def check_airdrop(self, http_client: aiohttp.ClientSession):
+        try:
+            json_data = {
+                "data": self.auth_data,
+                "hash": self.tg_session.hash_value
+            }
+            response = await http_client.post('https://api.bool.network/bool-stake-reward/user/bot:login',
+                                              json=json_data)
+            response.raise_for_status()
+            response_json = await response.json()
+            auth_token = response_json['data']
+            http_client.headers['Authorization'] = f'Bearer {auth_token}'
+            await asyncio.sleep(delay=(randint(5, 15)))
+            airdrop_resp = await http_client.get('https://api.bool.network/bool-stake-reward/power/single/check')
+            del http_client.headers['Authorization']
+            airdrop_resp.raise_for_status()
+            airdrop_json = await airdrop_resp.json()
+            airdrop_data = airdrop_json['data']
+            if airdrop_data['stake'] and airdrop_data['white']:
+                logger.info(f"{self.session_name} | Your airdrop: <e>{airdrop_data['power']}</e> BPP")
+            else:
+                logger.info(f'{self.session_name} | You are not eligible to claim airdrop | '
+                            f"Token staked: <y>{airdrop_data['stake']}</y> | White list: {airdrop_data['white']}")
+        except Exception as error:
+            logger.error(f"{self.session_name} | Unknown error when checking airdrop: {error}")
             await asyncio.sleep(delay=3)
 
     async def run(self, user_agent: str, proxy: str | None) -> None:
@@ -396,7 +425,7 @@ class Tapper:
                         rank = strict_data['rank']
                         logger.info(f"{self.session_name} | Balance: <e>{balance}</e> tBOL | "
                                     f"Rank: <fg #ffbcd9>{rank}</fg #ffbcd9> | "
-                                    f"Is available for Airdrop: <lc>{strict_data['isVerify']}</lc>")
+                                    f"Boolean Badge: <lc>{strict_data['isVerify']}</lc>")
 
                         await self.check_daily_reward(http_client=http_client)
 
@@ -404,49 +433,62 @@ class Tapper:
                             await asyncio.sleep(delay=randint(3, 5))
                             await self.processing_tasks(http_client=http_client)
 
+                        await self.check_airdrop(http_client=http_client)
                         await asyncio.sleep(delay=randint(3, 5))
 
-                        balance = await self.get_unstaking_balance(http_client=http_client,
-                                                                   wallet_address=strict_data['evmAddress'])
-                        user_staking = await self.get_user_staking(http_client=http_client,
-                                                                   wallet_address=strict_data['evmAddress'])
-                        staking_balance = 0
-                        for record in user_staking:
-                            staking_balance += int(int(record['currentStake']) / 1e18)
-                        logger.info(f'{self.session_name} | Balance in stake: <e>{staking_balance}</e> tBOL | '
-                                    f'Unused balance: <fg #FFA500>{balance}</fg #FFA500> tBOL')
+                        if strict_data['evmAddress'] is not None:
+                            balance = await self.get_unstaking_balance(http_client=http_client,
+                                                                       wallet_address=strict_data['evmAddress'])
+                            user_staking = await self.get_user_staking(http_client=http_client,
+                                                                       wallet_address=strict_data['evmAddress'])
+                            staking_balance = 0
+                            amount = []
+                            device_ids = []
+                            for record in user_staking:
+                                stake_amount = round(int(record['nextStake']) / 1e18, 2)
+                                device_ids.append(record['deviceID'])
+                                staking_balance += int(stake_amount)
+                                amount.append(str(stake_amount))
 
-                        if settings.STAKING and balance >= settings.MIN_STAKING_BALANCE:
-                            if (user_staking is None or len(user_staking) == 0 and not strict_data['isVerify']) \
-                                    or strict_data['isVerify'] and settings.STAKE_ALL:
-                                record = await self.get_staking_record(http_client=http_client, page=1)
-                                if record is not None:
-                                    voters = record['voterCount']
-                                    apy = round(record['yield'] * 100, 2)
-                                    logger.info(
-                                        f'{self.session_name} | Staking record found | APY: <lc>{apy}%</lc> | '
-                                        f'Voters: <y>{voters}</y>')
-                                    await asyncio.sleep(delay=randint(3, 5))
-                                    data = await self.make_staking(http_client=http_client,
-                                                                   device_id=record['deviceID'], amount=balance)
-                                    if data is not None:
+                            logger.info(f'{self.session_name} | Balance in stake: <e>{staking_balance}</e> tBOL | '
+                                        f'Unused balance: <fg #FFA500>{balance}</fg #FFA500> tBOL')
+
+                            if settings.STAKING and balance >= settings.MIN_STAKING_BALANCE:
+                                if (user_staking is None or len(user_staking) == 0 and not strict_data['isVerify']) \
+                                        or strict_data['isVerify'] and settings.STAKE_ALL:
+                                    record = await self.get_staking_record(http_client=http_client, page=1)
+                                    if record is not None:
+                                        voters = record['voterCount']
+                                        apy = round(record['yield'] * 100, 2)
+                                        logger.info(
+                                            f'{self.session_name} | Staking record found | APY: <lc>{apy}%</lc> | '
+                                            f'Voters: <y>{voters}</y>')
                                         await asyncio.sleep(delay=randint(3, 5))
-                                        result = await self.performing_transaction(http_client=http_client,
-                                                                                   data=data,
-                                                                                   wallet_address=strict_data[
-                                                                                       'evmAddress'])
-                                        if result is not None:
-                                            logger.success(
-                                                f"{self.session_name} | Successfully staked <e>{balance}</e> tBOL")
+                                        amount.append(str(balance))
+                                        device_ids.append(record['deviceID'])
+                                        data = await self.make_staking(http_client=http_client,
+                                                                       device_ids=device_ids, amount=amount)
+                                        if data is not None:
+                                            await asyncio.sleep(delay=randint(3, 5))
+                                            result = await self.performing_transaction(http_client=http_client,
+                                                                                       data=data,
+                                                                                       wallet_address=strict_data[
+                                                                                           'evmAddress'])
+                                            if result is not None:
+                                                logger.success(
+                                                    f"{self.session_name} | Successfully staked <e>{balance}</e> tBOL")
 
-                        if not strict_data['isVerify'] and staking_balance > 0:
-                            await asyncio.sleep(delay=randint(3, 10))
-                            subscribed = await self.check_user_subscription(http_client=http_client)
-                            if not subscribed:
-                                await self.tg_session.join_tg_channel('https://t.me/boolofficial')
-                            else:
-                                await self.verify_account(http_client=http_client)
+                            if not strict_data['isVerify'] and staking_balance > 0:
+                                await asyncio.sleep(delay=randint(3, 10))
+                                subscribed = await self.check_user_subscription(http_client=http_client)
+                                if not subscribed:
+                                    await self.tg_session.join_tg_channel('https://t.me/boolofficial')
+                                else:
+                                    await self.verify_account(http_client=http_client)
 
+                        else:
+                            logger.info(f'{self.session_name} | First run completed | '
+                                        f'Staking will be available in next cycle')
                     logger.info(f"{self.session_name} | Sleep <y>{round(sleep_time / 60, 1)}</y> min")
                     await asyncio.sleep(delay=sleep_time)
 

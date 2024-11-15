@@ -54,5 +54,12 @@ TRANSACTION_METHODS = {
             "params": ['block_number', True],
             "id": 1,
             "jsonrpc": "2.0"
+        },
+    "state_queryStorageAt":
+        {
+            "method": "state_queryStorageAt",
+            "params": [['block_number']],
+            "id": 1,
+            "jsonrpc": "2.0"
         }
 }
