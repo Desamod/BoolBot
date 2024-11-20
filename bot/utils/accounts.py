@@ -1,9 +1,9 @@
 import os
 
-from bot.core.agents import generate_random_user_agent
+from bot.core.agents import generate_random_user_agent, is_user_agent_valid, get_telegram_custom_params
 from bot.utils import logger
 from bot.config import settings
-from bot.utils.file_manager import load_from_json, save_to_json
+from bot.utils.file_manager import load_from_json, save_to_json, update_ua_json_data
 
 
 class Accounts:
@@ -25,6 +25,12 @@ class Accounts:
             is_session_added = False
             for saved_account in accounts_from_json:
                 if saved_account['session_name'] == session:
+                    if not is_user_agent_valid(saved_account['user_agent']):
+                        tg_params = get_telegram_custom_params(saved_account['user_agent'])
+                        saved_account['user_agent'] = saved_account['user_agent'] + tg_params if tg_params else (
+                            generate_random_user_agent(device_type='android', browser_type='chrome'))
+                        update_ua_json_data(f'sessions/accounts.json', dict_=saved_account)
+                        logger.success(f'{saved_account["session_name"]} | Successfully updated User-Agent data')
                     available_accounts.append(saved_account)
                     is_session_added = True
                     break

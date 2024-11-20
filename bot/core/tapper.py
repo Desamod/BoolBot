@@ -8,6 +8,7 @@ from better_proxy import Proxy
 from bot.config import settings
 from bot.utils import logger
 from bot.exceptions import InvalidSession
+from .agents import get_sec_ch_ua
 from .headers import headers
 
 from random import randint
@@ -397,6 +398,7 @@ class Tapper:
         access_token_created_time = 0
         proxy_conn = ProxyConnector().from_url(proxy) if proxy else None
         headers["User-Agent"] = user_agent
+        headers['Sec-Ch-Ua'] = get_sec_ch_ua(user_agent)
 
         async with CloudflareScraper(headers=headers, connector=proxy_conn, trust_env=True) as http_client:
             if proxy:
