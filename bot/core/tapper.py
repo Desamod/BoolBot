@@ -122,7 +122,7 @@ class Tapper:
 
             records = response_json['data']['records']
             for record in records:
-                if record['voterCount'] < 700 and record['deviceState'] == 'SERVING':
+                if record['voterCount'] < 2000 and record['deviceState'] == 'SERVING':
                     return record
 
             if page < int(response_json['data']['pages']):
